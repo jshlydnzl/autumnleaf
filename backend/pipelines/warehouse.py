@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS runs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     finalized_at TIMESTAMPTZ
 );
+CREATE TABLE IF NOT EXISTS orchestrations (run_id UUID PRIMARY KEY, state VARCHAR NOT NULL);
 CREATE TABLE IF NOT EXISTS raw.orders (
     run_id UUID NOT NULL, row_no INTEGER NOT NULL,
     order_id VARCHAR NOT NULL, order_date VARCHAR NOT NULL, amount VARCHAR NOT NULL

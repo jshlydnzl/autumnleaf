@@ -1,0 +1,14 @@
+version: 2
+sources:
+  - name: raw
+    tables:
+      - name: orders
+models:
+  - name: stg_orders
+    columns:
+      - name: order_id
+        data_tests: [not_null, unique]
+      - name: order_date
+        data_tests: [not_null]
+      - name: amount
+        data_tests: [not_null]

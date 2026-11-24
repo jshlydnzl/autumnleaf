@@ -63,6 +63,12 @@ The hosted application supports invite-only installations. Members do not see ac
 
 The application database does not copy the authoritative warehouse publication state. If background processing is introduced later, job status can live in PostgreSQL, but a retry must consult the warehouse receipt before publishing again.
 
+### 4.3 Optional local automation
+
+Airflow can run an uploaded ELT batch outside the browser. Django provides a private copy of the source and triggers a workflow using the run identifier. Airflow loads raw rows, runs dbt models and tests, and prepares a result in a separate database for that run. Airflow and dbt do not open the live account warehouse.
+
+AutumnLeaf checks the run when its Batch Trail is open. Django imports a successful result and applies the same publication and replacement rules as the manual pipeline. Failed runs do not advance the published batch. This integration is for loopback development; production orchestration and scheduled runs are outside the release scope.
+
 ## 5. Security and operational requirements
 
 - **Identity and permissions:** Use Django password hashing, session cookies, and cross-site request forgery protection. Rate-limit sign-in, invalidate sessions on disable or password reset, and check role and ownership before returning any protected data or export. Hide account controls for Members without relying on the UI for enforcement.

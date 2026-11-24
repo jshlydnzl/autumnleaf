@@ -6,7 +6,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from identity.views import body, error, signed_in
 
-from . import runs
+from . import airflow, runs
 from .orders import MAX_BYTES, InputError, batch_month
 from .warehouse import TABLES, preview, transaction, warehouse
 
@@ -29,7 +29,7 @@ def pipeline_sample(request, account, filename):
 def pipeline_runs(request, account):
     if request.method == "GET":
         with warehouse(account) as (db, _):
-            return JsonResponse({"runs": runs.history(db)})
+            return JsonResponse({"runs": runs.history(db), "automation_available": airflow.available()})
 
     file = request.FILES.get("file")
     mode = request.POST.get("mode")
@@ -70,12 +70,65 @@ def pipeline_advance(request, account, run_id):
         run = runs.get_run(db, run_id)
         if not run:
             return error("Pipeline run not found.", 404)
-        if type(expected) is not int or run["step"] != expected or run["status"] != "in_progress":
+        if type(expected) is not int or run["step"] != expected or run["status"] != "in_progress" or runs.automation(db, run_id):
             return error("This run has changed. Open its current step and try again.", 409)
         try:
             runs.advance(db, directory, run)
         except InputError as exc:
             runs.fail(db, run_id, str(exc))
+        return JsonResponse({"run": runs.detail(db, directory, runs.get_run(db, run_id))})
+
+
+@never_cache
+@require_POST
+@signed_in
+def pipeline_automate(request, account, run_id):
+    with warehouse(account) as (db, directory):
+        run = runs.get_run(db, run_id)
+        if not run:
+            return error("Pipeline run not found.", 404)
+        if runs.automation(db, run_id):
+            return JsonResponse({"run": runs.detail(db, directory, run)})
+        if run["mode"] != "elt" or run["step"] != 0 or run["status"] != "in_progress":
+            return error("Start an unprocessed ELT upload before handing it to Airflow.", 409)
+        if not airflow.available():
+            return error("The local Airflow connection is not configured.", 503)
+        airflow.prepare(directory, run)
+
+    try:
+        airflow.start(run_id)
+    except airflow.AirflowUnavailable as exc:
+        return error(str(exc), 503)
+
+    with warehouse(account) as (db, directory), transaction(db):
+        run = runs.get_run(db, run_id)
+        if not runs.automation(db, run_id):
+            if run["step"] != 0 or run["status"] != "in_progress":
+                return error("This run was already started manually. The Airflow candidate will not publish.", 409)
+            db.execute("INSERT INTO orchestrations VALUES (?, 'queued')", [run_id])
+        return JsonResponse({"run": runs.detail(db, directory, run)})
+
+
+@never_cache
+@require_POST
+@signed_in
+def pipeline_sync(request, account, run_id):
+    with warehouse(account) as (db, directory):
+        run = runs.get_run(db, run_id)
+        if not run or not runs.automation(db, run_id):
+            return error("Automated pipeline run not found.", 404)
+        if run["status"] != "in_progress":
+            return JsonResponse({"run": runs.detail(db, directory, run)})
+
+    try:
+        state = airflow.state(run_id)
+    except airflow.AirflowUnavailable as exc:
+        return error(str(exc), 503)
+
+    with warehouse(account) as (db, directory), transaction(db):
+        run = runs.get_run(db, run_id)
+        if run["status"] == "in_progress":
+            airflow.complete(db, directory, run, state)
         return JsonResponse({"run": runs.detail(db, directory, runs.get_run(db, run_id))})
 
 

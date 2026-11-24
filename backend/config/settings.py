@@ -59,6 +59,10 @@ WAREHOUSE_ROOT = Path(
     os.environ.get("AUTUMNLEAF_WAREHOUSE_DIR")
     or Path(DATABASES["default"]["NAME"]).parent / "warehouses"
 )
+AIRFLOW_JOB_ROOT = Path(os.environ.get("AUTUMNLEAF_JOB_ROOT") or WAREHOUSE_ROOT.parent / "airflow-jobs")
+AIRFLOW_URL = os.environ.get("AUTUMNLEAF_AIRFLOW_URL", "")
+AIRFLOW_USER = os.environ.get("AUTUMNLEAF_AIRFLOW_USER", "")
+AIRFLOW_PASSWORD = os.environ.get("AUTUMNLEAF_AIRFLOW_PASSWORD", "")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 TIME_ZONE = "UTC"
 SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = not DEBUG

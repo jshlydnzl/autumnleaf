@@ -14,6 +14,10 @@ def get_run(db, run_id):
     return record(db, "SELECT * FROM runs WHERE id = ?", [run_id])
 
 
+def automation(db, run_id):
+    return record(db, "SELECT state FROM orchestrations WHERE run_id = ?", [run_id])
+
+
 def history(db):
     result = db.execute("SELECT * FROM runs ORDER BY created_at DESC, id LIMIT 30")
     columns = [column[0] for column in result.description]
@@ -53,6 +57,7 @@ def detail(db, directory, run):
         "source_preview": extract(source_path(directory, run_id).read_bytes())[:PREVIEW_SIZE] if completed else [],
         "clean_preview": [],
         "replacement": None,
+        "automation": automation(db, run_id),
     }
     if run["mode"] == "etl" and completed == 2:
         data["clean_preview"] = json.loads(clean_path(directory, run_id).read_text(encoding="utf-8"))[:PREVIEW_SIZE]

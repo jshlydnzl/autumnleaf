@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { ApiError, message, read, write } from './api'
 import { DataGrid, type Cell } from './data-grid'
 
@@ -25,6 +25,7 @@ type Run = Summary & {
   source_preview: Cell[][]
   clean_preview: Cell[][]
   replacement: Summary | null
+  automation: { state: 'queued' | 'running' | 'success' | 'failed' } | null
 }
 type Comparison = {
   etl: Summary | null
@@ -103,7 +104,9 @@ function ComparisonPanel({ month, setMonth, revision }: { month: string, setMont
   )
 }
 
-function BatchTrail({ run, busy, onNext, onPublish }: { run: Run, busy: boolean, onNext: () => void, onPublish: () => void }) {
+function BatchTrail({ run, busy, canAutomate, onNext, onPublish, onAutomate }: {
+  run: Run, busy: boolean, canAutomate: boolean, onNext: () => void, onPublish: () => void, onAutomate: () => void,
+}) {
   return (
     <section className="panel batch-trail" aria-labelledby="trail-title">
       <div className="panel-head"><h2 id="trail-title">Batch Trail</h2><RunStatusBadge status={run.status} /></div>
@@ -120,7 +123,7 @@ function BatchTrail({ run, busy, onNext, onPublish }: { run: Run, busy: boolean,
           {steps[run.mode].map((name, index) => {
             const done = index < run.step
             const failed = index === run.step && run.status === 'failed'
-            const active = index === run.step && run.status === 'in_progress'
+            const active = index === run.step && run.status === 'in_progress' && !run.automation
             return <li key={name} className={active ? 'trail-current' : undefined} aria-current={active ? 'step' : undefined}>
               <span className="trail-index">{index + 1}</span>
               <div><strong>{name}</strong><p className="muted">{tips[run.mode][index]}</p></div>
@@ -130,9 +133,18 @@ function BatchTrail({ run, busy, onNext, onPublish }: { run: Run, busy: boolean,
             </li>
           })}
         </ol>
-        {run.status === 'in_progress' && <button className="button primary" type="button" disabled={busy} onClick={onNext}>
-          {busy ? 'Running…' : 'Run ' + steps[run.mode][run.step]}
-        </button>}
+        {run.automation && <p className="pipeline-notice" role="status">
+          Airflow + dbt: {run.automation.state === 'success' ? 'Tests passed' : run.automation.state}.
+          {run.status === 'in_progress' && ' Status updates here automatically.'}
+        </p>}
+        {run.status === 'in_progress' && !run.automation && <div className="pipeline-actions">
+          <button className="button primary" type="button" disabled={busy} onClick={onNext}>
+            {busy ? 'Working…' : 'Run ' + steps[run.mode][run.step]}
+          </button>
+          {canAutomate && run.mode === 'elt' && run.step === 0 && (
+            <button className="button" type="button" disabled={busy} onClick={onAutomate}>Run with Airflow + dbt</button>
+          )}
+        </div>}
         {run.error && <div className="feedback pipeline-feedback" role="alert">
           <p>{run.error}</p>
           {run.errors.length > 0 && <ul>{run.errors.map(error => <li key={error.row}>Row {error.row}: {error.message}</li>)}</ul>}
@@ -176,6 +188,8 @@ export function PipelineLab() {
   const [run, setRun] = useState<Run | null>(null)
   const [history, setHistory] = useState<Summary[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
+  const [canAutomate, setCanAutomate] = useState(false)
+  const [automationError, setAutomationError] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -183,20 +197,48 @@ export function PipelineLab() {
 
   useEffect(() => {
     const controller = new AbortController()
-    read<{ runs: Summary[] }>('pipelines/', controller.signal)
-      .then(({ runs }) => { if (!controller.signal.aborted) setHistory(runs) })
+    read<{ runs: Summary[], automation_available: boolean }>('pipelines/', controller.signal)
+      .then(({ runs, automation_available }) => {
+        if (!controller.signal.aborted) {
+          setHistory(runs)
+          setCanAutomate(automation_available)
+        }
+      })
       .catch(err => { if (!controller.signal.aborted) setError(message(err)) })
       .finally(() => { if (!controller.signal.aborted) setHistoryLoading(false) })
     return () => controller.abort()
   }, [])
 
-  function show(data: Run) {
+  const show = useCallback((data: Run) => {
     setRun(data)
     setComparisonMonth(data.month)
     setHistory(current => [data, ...current.filter(item => item.id !== data.id)]
       .sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 30))
     if (data.status === 'published') setRevision(current => current + 1)
-  }
+  }, [])
+
+  const automationId = run?.automation && run.status === 'in_progress' ? run.id : null
+  useEffect(() => {
+    if (!automationId) return
+    const path = 'pipelines/' + automationId + '/sync/'
+    let stopped = false
+    async function sync() {
+      try {
+        const { run } = await write<{ run: Run }>(path, 'POST')
+        if (stopped) return
+        setAutomationError('')
+        show(run)
+      } catch (err) {
+        if (!stopped) setAutomationError(message(err))
+      }
+      if (!stopped) timer = window.setTimeout(sync, 2500)
+    }
+    let timer = window.setTimeout(sync, 1000)
+    return () => {
+      stopped = true
+      window.clearTimeout(timer)
+    }
+  }, [automationId, show])
 
   async function perform(action: () => Promise<void>) {
     setError('')
@@ -219,10 +261,11 @@ export function PipelineLab() {
     return read<{ run: Run }>('pipelines/' + id + '/').then(result => show(result.run))
   }
 
-  function runAction(selected: Run, action: 'advance' | 'publish') {
+  function runAction(selected: Run, action: 'advance' | 'publish' | 'automate') {
     void perform(async () => {
       try {
-        const data = action === 'advance' ? { step: selected.step } : { baseline: selected.replacement?.id }
+        const data = action === 'advance' ? { step: selected.step }
+          : action === 'publish' ? { baseline: selected.replacement?.id } : {}
         const result = await write<{ run: Run }>('pipelines/' + selected.id + '/' + action + '/', 'POST', data)
         show(result.run)
       } catch (err) {
@@ -239,6 +282,7 @@ export function PipelineLab() {
         <a className="button" href="/data">Open Data Explorer</a>
       </div>
       {error && <p className="feedback pipeline-feedback" role="alert">{error}</p>}
+      {automationId && automationError && <p className="feedback pipeline-feedback" role="alert">{automationError}</p>}
       {notice && <p className="pipeline-notice" role="status">{notice}</p>}
       <form className="panel pipeline-form" onSubmit={upload} aria-label="New pipeline run">
         <label>Orders CSV<input type="file" name="file" accept=".csv,text/csv" required disabled={busy} /></label>
@@ -255,7 +299,8 @@ export function PipelineLab() {
       </form>
       <div className="pipeline-grid">
         <div className="pipeline-main">
-          {run ? <BatchTrail run={run} busy={busy} onNext={() => runAction(run, 'advance')} onPublish={() => runAction(run, 'publish')} />
+          {run ? <BatchTrail run={run} busy={busy} canAutomate={canAutomate}
+            onNext={() => runAction(run, 'advance')} onPublish={() => runAction(run, 'publish')} onAutomate={() => runAction(run, 'automate')} />
             : <section className="panel"><div className="panel-head"><h2>Batch Trail</h2></div><p className="panel-empty muted">Upload an orders CSV or open a recent run to get started.</p></section>}
           <ComparisonPanel month={comparisonMonth} setMonth={setComparisonMonth} revision={revision} />
         </div>

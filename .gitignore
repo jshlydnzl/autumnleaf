@@ -16,6 +16,10 @@ coverage/
 data/
 uploads/
 warehouses/
+airflow-jobs/
+/automation/dbt/.user.yml
+/automation/dbt/target/
+/automation/dbt/logs/
 exports/
 backups/
 *.sqlite3

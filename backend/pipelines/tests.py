@@ -1,11 +1,15 @@
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 
 from identity.models import Account
+
+from .airflow import job_path
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "orders"
 PASSWORD = "Synthetic-Leaf-5610"
@@ -158,3 +162,43 @@ class PipelineTests(TestCase):
         self.assertEqual(Client().get(path).status_code, 401)
         self.assertEqual(self.client.get("/api/pipelines/samples/other.csv/").status_code, 404)
         self.assertEqual(self.client.get("/api/warehouse/", {"table": "runs"}).status_code, 400)
+
+    @override_settings(AIRFLOW_URL="", AIRFLOW_USER="", AIRFLOW_PASSWORD="")
+    def test_airflow_is_optional_and_only_accepts_unprocessed_elt(self):
+        self.assertFalse(self.client.get("/api/pipelines/").json()["automation_available"])
+        etl = self.upload("etl")["run"]
+        self.assertEqual(self.action(etl, "automate", {}).status_code, 409)
+        elt = self.upload("elt")["run"]
+        self.assertEqual(self.action(elt, "automate", {}).status_code, 503)
+        self.assertEqual(self.step(elt)["step"], 1)
+
+    def test_airflow_handoff_keeps_approvals_and_workspace_ownership(self):
+        temp = TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.enterContext(override_settings(
+            AIRFLOW_JOB_ROOT=Path(temp.name), AIRFLOW_URL="http://127.0.0.1:8082",
+            AIRFLOW_USER="test", AIRFLOW_PASSWORD="test",
+        ))
+        initial = self.run_batch("elt")
+        candidate = self.upload("elt", "november-corrected.csv")["run"]
+        with patch("pipelines.airflow.start") as submit:
+            self.assertEqual(self.action(candidate, "automate", {}).json()["run"]["automation"], {"state": "queued"})
+            self.assertEqual(self.action(candidate, "automate", {}).status_code, 200)
+            self.assertEqual(submit.call_count, 1)
+        self.assertEqual(self.action(candidate, "advance", {"step": 0}).status_code, 409)
+        member = self.session("member")
+        self.assertEqual(self.send(member, f"/api/pipelines/{candidate['id']}/sync/", {}).status_code, 404)
+        outcome = {
+            "checksum": candidate["checksum"], "loaded": True,
+            "clean": [[2, "ORD-001", "2026-11-05", "1300.00"]],
+        }
+        (job_path(candidate["id"]) / "result.json").write_text(json.dumps(outcome))
+        with patch("pipelines.airflow.state", return_value="success") as remote:
+            result = self.action(candidate, "sync", {}).json()["run"]
+            self.assertEqual(result["status"], "review")
+            self.assertEqual(result["automation"], {"state": "success"})
+            self.assertEqual(self.action(candidate, "sync", {}).status_code, 200)
+            self.assertEqual(remote.call_count, 1)
+        self.assertEqual(self.comparison()["elt"]["revenue"], "2000.00")
+        self.assertEqual(self.action(result, "publish", {"baseline": initial["id"]}).status_code, 200)
+        self.assertEqual(self.comparison()["elt"]["revenue"], "1300.00")
