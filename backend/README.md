@@ -1,3 +1,3 @@
 # Backend
 
-The Python and Django API will live here. It will handle accounts, workspace access, CSV ingestion, pipeline runs, reporting, and Excel exports.
+The Django base uses SQLite and serves a read-only health check at **/api/health/**. Install the pinned dependencies into a virtual environment. DuckDB, openpyxl, psycopg, and Gunicorn are available for the planned warehouse and deployment work; those workflows are not configured yet. See the [local setup](../README.md#run-locally).
