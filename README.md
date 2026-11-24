@@ -21,6 +21,6 @@ Use Node.js 24 and Python 3.12 for the tested setup.
 
 - **Frontend:** Run `npm ci` and `npm run build` from **frontend** to install dependencies, check types, and build the browser app.
 - **Backend:** Install the pinned dependencies from [requirements.txt](backend/requirements.txt) in a Python virtual environment.
-- **Access:** Running instances are invitation-only. The instance operator manages access and configuration privately.
+- **Access:** AutumnLeaf is invitation-only. If you need an account, contact the repository owner, [@jshlydnzl](https://github.com/jshlydnzl).
 
 The workspace currently supports sign-in and workspace isolation. CSV ingestion, pipelines, browser SQL, and reporting are not implemented yet.
