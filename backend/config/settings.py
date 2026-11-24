@@ -55,6 +55,10 @@ DATABASES = {
         "OPTIONS": {"transaction_mode": "IMMEDIATE"},
     }
 }
+WAREHOUSE_ROOT = Path(
+    os.environ.get("AUTUMNLEAF_WAREHOUSE_DIR")
+    or Path(DATABASES["default"]["NAME"]).parent / "warehouses"
+)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 TIME_ZONE = "UTC"
 SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = not DEBUG

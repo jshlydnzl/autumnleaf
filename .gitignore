@@ -15,6 +15,7 @@ coverage/
 # Private application data
 data/
 uploads/
+warehouses/
 exports/
 backups/
 *.sqlite3

@@ -35,10 +35,11 @@ export function read<T>(path: string, signal?: AbortSignal) {
 
 export async function write<T>(path: string, method: 'POST' | 'PATCH', data: object = {}) {
   const { csrfToken } = await read<{ csrfToken: string }>('auth/csrf/')
+  const isForm = data instanceof FormData
   return request<T>(path, {
     method,
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-    body: JSON.stringify(data),
+    headers: { 'X-CSRFToken': csrfToken, ...(!isForm ? { 'Content-Type': 'application/json' } : {}) },
+    body: isForm ? data : JSON.stringify(data),
   })
 }
 

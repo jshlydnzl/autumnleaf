@@ -4,17 +4,29 @@ import { ApiError, message, read, write, type Account } from './api'
 import { Accounts } from './accounts'
 import { AuthScreen } from './auth-screen'
 import { Leaf, NavIcon } from './brand'
+import { DataExplorer } from './data-explorer'
+import { PipelineLab } from './pipeline-lab'
 import './index.css'
 
+const nav = [
+  ['/', 'Workspace', 'workspace'],
+  ['/data', 'Data Explorer', 'data'],
+  ['/pipelines', 'Pipeline Lab', 'pipeline'],
+  ['/accounts', 'Accounts', 'accounts'],
+] as const
+
 function Workspace({ account }: { account: Account }) {
-  const [name, setName] = useState('')
+  const [workspace, setWorkspace] = useState<{ name: string, publishedRows: number } | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
     const controller = new AbortController()
-    read<{ workspace: { name: string } }>('workspaces/' + account.id + '/', controller.signal)
-      .then(({ workspace }) => {
-        if (!controller.signal.aborted) setName(workspace.name)
+    Promise.all([
+      read<{ workspace: { name: string } }>('workspaces/' + account.id + '/', controller.signal),
+      read<{ total: number }>('warehouse/', controller.signal),
+    ])
+      .then(([{ workspace }, { total }]) => {
+        if (!controller.signal.aborted) setWorkspace({ name: workspace.name, publishedRows: total })
       })
       .catch(err => {
         if (!controller.signal.aborted) setError(message(err))
@@ -33,13 +45,17 @@ function Workspace({ account }: { account: Account }) {
           <div className="panel-head"><h2 id="datasets">Datasets</h2></div>
           <div className="empty-workspace">
             <NavIcon name="workspace" />
-            <p role="status">{name ? 'No datasets yet' : error ? 'Workspace unavailable' : 'Loading workspace…'}</p>
+            <p role="status">{workspace ? (workspace.publishedRows ? 'Published sales data available' : 'No published data yet')
+              : error ? 'Workspace unavailable' : 'Loading workspace…'}</p>
+            {workspace && <a className="button" href={workspace.publishedRows ? '/data' : '/pipelines'}>
+              {workspace.publishedRows ? 'Open Data Explorer' : 'Open Pipeline Lab'}
+            </a>}
           </div>
         </section>
         <aside className="panel inspector" aria-labelledby="workspace-info">
           <div className="panel-head"><h2 id="workspace-info">Workspace details</h2></div>
           <dl>
-            <div><dt>Name</dt><dd>{name || '—'}</dd></div>
+            <div><dt>Name</dt><dd>{workspace?.name || '—'}</dd></div>
             <div><dt>Owner</dt><dd>{account.username}</dd></div>
             <div><dt>Visibility</dt><dd>Private</dd></div>
           </dl>
@@ -49,8 +65,8 @@ function Workspace({ account }: { account: Account }) {
   )
 }
 
-function Shell({ account, isAccounts, signOut, children }: {
-  account: Account, isAccounts: boolean, signOut: () => Promise<void>, children: ReactNode,
+function Shell({ account, path, signOut, children }: {
+  account: Account, path: string, signOut: () => Promise<void>, children: ReactNode,
 }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -70,8 +86,9 @@ function Shell({ account, isAccounts, signOut, children }: {
       </header>
       <nav className="app-nav" aria-label="Workspace navigation">
         <p className="eyebrow">Workspace</p>
-        <a href="/" aria-current={!isAccounts ? 'page' : undefined}><NavIcon name="workspace" /> <span>Workspace</span></a>
-        {account.role === 'admin' && <a href="/accounts" aria-current={isAccounts ? 'page' : undefined}><NavIcon name="accounts" /> <span>Accounts</span></a>}
+        {nav.filter(([href]) => href !== '/accounts' || account.role === 'admin').map(([href, label, icon]) => (
+          <a key={href} href={href} aria-current={path === href ? 'page' : undefined}><NavIcon name={icon} /> <span>{label}</span></a>
+        ))}
       </nav>
       <main id="workspace-content" className="app-main" tabIndex={-1}>
         {error && <p className="feedback" role="alert">{error}</p>}
@@ -117,19 +134,22 @@ function App() {
       {error && <p className="session-error feedback" role="alert">{error}</p>}
       <AuthScreen isSetup={isSetup} onSignIn={next => {
         setError('')
-        if (window.location.pathname !== '/' && next.role !== 'admin') window.history.replaceState(null, '', '/')
+        if (window.location.pathname === '/accounts' && next.role !== 'admin') window.history.replaceState(null, '', '/')
         setAccount(next)
       }} />
     </>
   )
-  const isAccounts = window.location.pathname === '/accounts' && account.role === 'admin'
+  const requested = window.location.pathname
+  const path = nav.some(([href]) => href === requested) && (requested !== '/accounts' || account.role === 'admin') ? requested : '/'
   return (
-    <Shell account={account} isAccounts={isAccounts} signOut={async () => {
+    <Shell account={account} path={path} signOut={async () => {
       await write('auth/logout/', 'POST')
       window.history.replaceState(null, '', '/')
       setAccount(null)
     }}>
-      {isAccounts ? <Accounts signedIn={account} /> : <Workspace account={account} />}
+      {path === '/accounts' ? <Accounts signedIn={account} />
+        : path === '/data' ? <DataExplorer />
+          : path === '/pipelines' ? <PipelineLab /> : <Workspace account={account} />}
     </Shell>
   )
 }

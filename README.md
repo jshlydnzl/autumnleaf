@@ -23,4 +23,8 @@ Use Node.js 24 and Python 3.12 for the tested setup.
 - **Backend:** Install the pinned dependencies from [requirements.txt](backend/requirements.txt) in a Python virtual environment.
 - **Access:** AutumnLeaf is invitation-only. If you need an account, contact the repository owner, [@jshlydnzl](https://github.com/jshlydnzl).
 
-The workspace currently supports sign-in and workspace isolation. CSV ingestion, pipelines, browser SQL, and reporting are not implemented yet.
+## Try the Pipeline Lab
+
+Open **Pipeline Lab**, choose **November 2026**, and download the original sample from **Try the sample CSVs**. Upload the same file once in **ELT** and once in **ETL**, then run each step in the Batch Trail. The comparison should show two matching orders totaling **₱2,000.00** in each mode.
+
+The corrected sample replaces the month with one order totaling **₱1,300.00** after approval. The invalid sample must leave the last published batch unchanged. Use **Data Explorer** to inspect the raw, staging, and published sales tables. Free-form browser SQL, dashboards, and Excel export are not part of this release.
