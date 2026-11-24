@@ -33,7 +33,7 @@ Use a system sans-serif for the interface and a system monospace for SQL only. S
 | **SQL Workspace** | Put the editor above the results grid. Keep **Run query** and **Save query** near the editor. Show result count, execution status, and errors in the results area without hiding or clearing the SQL. |
 | **Pipeline Lab** | Put file selection and ETL or ELT mode at the top. Below, show the ordered pipeline steps, the current step's output, and recent runs. |
 | **Reports** | Put the date filter and **Export to Excel** above one revenue KPI and one daily sales chart. The chart and export must represent the same selected data. |
-| **Accounts** | Show account status, role, and available management actions. Keep **Create account** visible to Admins only; Django still enforces permission on every request. |
+| **Accounts** | Show account status, role, and available management actions to authorized users only. Django enforces permission on every request. |
 
 On narrower screens, collapse navigation and the data explorer rather than shrinking the editor or table text. Stack the editor and results. Allow wide tables to scroll inside their own area. Keep links, controls, and dialogs usable with the keyboard.
 

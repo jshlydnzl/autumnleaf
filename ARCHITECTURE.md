@@ -25,13 +25,13 @@ The first release has two layers in one repository: a React frontend and a **mod
 
 React owns the screens and interaction state. It calls Django under **/api/** using relative URLs. Django owns sessions, role checks, workspace ownership, input validation, and the published warehouse. The frontend may hide actions based on the session response, but it cannot grant permissions. If the session expires, the API returns **401 Unauthorized** and the frontend returns to sign-in. A signed-in Member requesting an Admin action receives **403 Forbidden**.
 
-Use Django session cookies rather than tokens stored in the browser. React requests a Django-issued CSRF token and sends it on state-changing requests, including sign-in. In development, Vite proxies the API; in production, the HTTPS entry point serves the static frontend and routes **/api/** to Django. [Django CSRF protection for browser requests](https://docs.djangoproject.com/en/5.2/howto/csrf/#using-csrf-protection-with-ajax)
+Use Django session cookies and protect state-changing requests from forgery. In development, Vite proxies the API; in production, the HTTPS entry point serves the static frontend and routes **/api/** to Django.
 
 ## 3. Services and functions
 
 | Service | Functions available in the MVP |
 | --- | --- |
-| **Identity and accounts** | Sign in with a local username and password, sign out, set or reset a password through a single-use link. Admins create accounts, assign roles, and disable or reactivate other accounts. |
+| **Identity and accounts** | Sign in, sign out, and control access to private workspaces. The instance operator manages account setup and recovery. |
 | **Ingestion** | Upload a retail orders CSV, associate it with a batch month, validate the file, calculate its checksum, and retain the source for inspection. |
 | **Pipeline Lab** | Run Python ETL or SQL ELT step by step; compare validated rows and revenue; preview a replacement batch; see why a run failed. |
 | **Warehouse Explorer** | Browse raw, staging, and reporting tables. Inspect column types and preview rows, scoped to the signed-in account. |
@@ -39,7 +39,7 @@ Use Django session cookies rather than tokens stored in the browser. React reque
 | **Reporting and Excel** | View total revenue and daily sales for a selected date range. Download an Excel snapshot from the same reporting dataset. |
 | **Run history** | See source filename, mode, batch, timestamps, outcome, row counts, and validation errors. Trace a published batch back to its input. |
 
-The hosted application supports invite-only installations. The first Admin is created on the host. Members do not see account-management controls, and the server refuses their requests to those functions. Admin status does not give a user access to other accounts' warehouse data.
+The hosted application supports invite-only installations. Members do not see account-management controls, and the server refuses their requests to those functions. Admin status does not give a user access to other accounts' warehouse data.
 
 ## 4. Data flow and storage boundaries
 
@@ -91,7 +91,7 @@ External connectors, scheduled jobs, team workspaces, live BI connections, and d
 
 ## 7. Deployment and verification
 
-**Local installation:** Run the Vite frontend and Django API with SQLite and workspace files on the machine. Create the first Admin from the host. Use the synthetic order fixtures to test ETL, ELT, replacement batches, and Excel export.
+**Local installation:** Run the Vite frontend and Django API with SQLite and workspace files on the machine. Use the synthetic order fixtures to test ETL, ELT, replacement batches, and Excel export.
 
 **Hosted installation:** Build the frontend with Vite and serve it over HTTPS on the same origin as the Django API. Run Django with PostgreSQL and a persistent volume, test on a temporary host URL, and then attach the .dev domain. Publish source code and synthetic fixtures under the proposed MIT license; do not publish installation data or secrets. Keep the private installation invite-only.
 

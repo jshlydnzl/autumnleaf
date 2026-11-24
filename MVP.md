@@ -8,22 +8,17 @@ The software is intended to be open source. Accounts, uploaded files, and wareho
 
 ## 2. Accounts and permissions
 
-### 2.1 Sign-in and account creation
+### 2.1 Sign-in and access
 
-AutumnLeaf uses local usernames and passwords. It does not require a Google or GitHub account and does not offer public sign-up.
-
-1. The installer creates the first Admin through an interactive command on the host. There is no default password and no public setup page.
-2. In **Accounts**, an Admin clicks **Create account**, enters a username, and chooses **Member** or **Admin**. Member is the default.
-3. AutumnLeaf creates a pending account and provides a private, single-use setup link. The recipient uses it to set a password. The link expires after 24 hours and cannot be reused. Store only a hash of the setup or reset token. No email service is required for the MVP.
-4. An Admin can disable or reactivate other accounts, change their roles, and issue a new setup or password-reset link. Disabling an account does not delete its data. Disabling it or resetting its password invalidates its active sessions. An Admin cannot demote or disable their own account, and concurrent account changes must not leave the installation without an active Admin. A host operator can recover access if all Admin credentials are lost.
+Access is by invitation, with no public registration or required Google or GitHub account. The instance operator handles account setup and recovery privately. Disabling an account revokes its sessions without deleting its data.
 
 ### 2.2 Role-based access control
 
 | Action | Admin | Member |
 | --- | --- | --- |
 | Use personal warehouse, pipeline lab, dashboard, and exports | Yes | Yes |
-| See **Accounts** and **Create account** | Yes | No |
-| List, create, disable, or manage other accounts | Yes | No |
+| See **Accounts** and its management controls | Yes | No |
+| Manage access for other accounts | Yes | No |
 | Open another user's warehouse, runs, or exports | No | No |
 
 Account management is not data access. An Admin can see account details and status, not another user's imported rows through the app. Every protected request checks permissions on the server. Signed-out visitors are sent to sign-in. A signed-in Member visiting an account-management URL or submitting the corresponding request directly receives **403 Forbidden**. Workspace records and export downloads are restricted to their owner. These controls do not protect data from someone who already controls the host or its backups.
@@ -75,10 +70,10 @@ Use the desktop-first layout, autumn palette, and interaction patterns in the [i
 
 | Milestone | Acceptance test |
 | --- | --- |
-| **1. Identity and isolation** | Bootstrap the first Admin, create a Member, and finish setup once. Confirm the Member sees no account controls, receives 403 on direct account-management requests, and cannot fetch another account's data or export. Disable the Member and confirm an existing session loses access. |
+| **1. Identity and isolation** | Confirm an invited Member can sign in, sees no account controls, receives 403 on direct account-management requests, and cannot fetch another account's data or export. Disable the Member and confirm an existing session loses access. |
 | **2. Pipeline and recovery** | Use a fixture with two orders totaling ₱2,000.00. Confirm ETL and ELT match and rerunning the same file does not change the totals. Replace it with a correction totaling ₱1,300.00. Submit an invalid replacement and verify that the report still shows ₱1,300.00. |
 | **3. SQL, reports, and export** | Save and run a SQL query in the browser. Filter the dashboard and verify its revenue against the corresponding Excel export. Confirm browser SQL cannot modify warehouse data on the server. |
-| **4. Self-hosted release** | Install from a clean checkout, create the first Admin without a social account, and run the synthetic demo. On the hosted instance, verify HTTPS, account restrictions, and data persistence after a restart. |
+| **4. Self-hosted release** | Install from a clean checkout and run the synthetic demo. On the hosted instance, verify HTTPS, account restrictions, and data persistence after a restart. |
 
 ## 7. Outside the MVP
 
