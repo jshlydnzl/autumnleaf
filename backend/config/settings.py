@@ -17,10 +17,19 @@ ALLOWED_HOSTS = [
     for host in os.environ.get("AUTUMNLEAF_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]").split(",")
     if host.strip()
 ]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        "AUTUMNLEAF_CSRF_TRUSTED_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173" if DEBUG else "",
+    ).split(",")
+    if origin.strip()
+]
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
+    "identity",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -32,10 +41,18 @@ MIDDLEWARE = [
 ]
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
+CSRF_FAILURE_VIEW = "identity.views.csrf_failure"
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": os.environ.get("AUTUMNLEAF_SQLITE_PATH", BASE_DIR / "db.sqlite3"),
+        "OPTIONS": {"transaction_mode": "IMMEDIATE"},
     }
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

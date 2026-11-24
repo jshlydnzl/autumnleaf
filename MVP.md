@@ -61,7 +61,7 @@ The lab keeps ETL and ELT results separate so one run cannot overwrite the other
 | **Reports** | Show one revenue total, one daily sales chart, a date filter, and an Excel export from **mart.daily_sales**. |
 | **Accounts** | Admin-only page for provisioning accounts and managing access. |
 
-Use a desktop-first layout: table navigation on the left, editor and results in the main pane. Use a graphite background with copper accents, readable contrast, and text labels for success and failure. The Excel download is a snapshot of the selected report data, not a live Excel connection.
+Use the desktop-first layout, autumn palette, and interaction patterns in the [interface design specification](DESIGN.md). The Excel download is a snapshot of the selected report data, not a live Excel connection.
 
 ## 5. Architecture, deployment, and open source
 

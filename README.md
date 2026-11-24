@@ -13,6 +13,7 @@ The stack is React, TypeScript, Tailwind CSS, and Vite on the frontend; Python a
 | [fixtures](fixtures/) | Synthetic data for examples and tests |
 | [MVP specification](MVP.md) | Product scope, account roles, and acceptance criteria |
 | [Technical architecture](ARCHITECTURE.md) | Stack, service boundaries, deployment, and scaling plan |
+| [Interface design](DESIGN.md) | Autumn palette, workspace layout, and interaction rules |
 
 ## Run locally
 
@@ -27,6 +28,7 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 export AUTUMNLEAF_DEBUG=1
 python manage.py migrate
+python manage.py bootstrap_admin # first run only
 python manage.py runserver 127.0.0.1:8000
 ```
 
@@ -38,7 +40,11 @@ npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite. The page checks Django through the Vite proxy at **/api/health/**. The base does not yet include sign-in, warehouse workflows, or a production deployment.
+Open the URL printed by Vite and sign in with the Admin account. From **Accounts**, create a Member and share their setup link privately. The Member can sign in after setting their password. There is no public sign-up.
+
+If you change Vite's default port, set **AUTUMNLEAF_CSRF_TRUSTED_ORIGINS** to the exact frontend origin before starting Django.
+
+The workspace currently supports account access and ownership. CSV ingestion, pipelines, browser SQL, and reporting are not implemented yet. This setup is for local development, not public hosting. Set **AUTUMNLEAF_SECRET_KEY** in your local environment if you need sessions to survive a Django restart; otherwise local development uses a fresh key.
 
 ## Checks
 
