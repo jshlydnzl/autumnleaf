@@ -2,7 +2,7 @@
 
 ## 1. Product concept
 
-AutumnLeaf is a self-hosted web workspace for learning data engineering. A user can sign in, load a retail CSV, run ETL and ELT one step at a time, inspect the warehouse, and use the same reporting table for a browser dashboard and an Excel export.
+AutumnLeaf is a self-hosted web workspace for learning data engineering. A user can sign in, load a retail CSV, run ETL or ELT one step at a time, or hand an ELT run to local Airflow and dbt. The roadmap adds a SQL worksheet, a dashboard, and an Excel export backed by the same published data.
 
 The software is intended to be open source. Accounts, uploaded files, and warehouse data are private to each installation. Publishing the source code does not open registration or grant access to a running installation.
 
@@ -39,6 +39,8 @@ The first workflow uses synthetic retail orders. A CSV contains **order_id**, **
 
 The lab keeps ETL and ELT results separate so one run cannot overwrite the other. The user can inspect the files, raw data where applicable, clean rows, and revenue totals after each step. The hosted runner executes only pipeline code and SQL deployed with the application. Users edit their own Python scripts and pipeline SQL in a local checkout for unrestricted experiments. Hosting the app does not give it access to scripts on the user's laptop.
 
+When local automation is configured, Airflow loads a fresh ELT batch into a separate DuckDB database and runs the deployed dbt models and tests. Django imports the successful result. Corrections still require approval before publication, and failed runs leave the last published batch intact.
+
 ### 3.3 Repeated and corrected batches
 
 - **Unchanged input:** Within a workspace and pipeline mode, resubmitting the same file for the same month does not add rows or change totals.
@@ -68,13 +70,16 @@ Use the desktop-first layout, autumn palette, and interaction patterns in the [i
 
 ## 6. Build sequence and acceptance tests
 
-| Milestone | Acceptance test |
-| --- | --- |
-| **1. Identity and isolation** | Confirm an invited Member can sign in, sees no account controls, receives 403 on direct account-management requests, and cannot fetch another account's data or export. Disable the Member and confirm an existing session loses access. |
-| **2. Pipeline and recovery** | Use a fixture with two orders totaling ₱2,000.00. Confirm ETL and ELT match and rerunning the same file does not change the totals. Replace it with a correction totaling ₱1,300.00. Submit an invalid replacement and verify that the report still shows ₱1,300.00. |
-| **3. SQL, reports, and export** | Save and run a SQL query in the browser. Filter the dashboard and verify its revenue against the corresponding Excel export. Confirm browser SQL cannot modify warehouse data on the server. |
-| **4. Self-hosted release** | Install from a clean checkout and run the synthetic demo. On the hosted instance, verify HTTPS, account restrictions, and data persistence after a restart. |
+| Phase | Status | Scope and acceptance |
+| --- | --- | --- |
+| **1. Identity and isolation** | Complete; on GitHub | Invite-only accounts, Admin and Member roles, and private workspaces. Verify that Members cannot manage accounts or read another workspace and that disabling an account revokes its sessions. |
+| **2. Pipeline Lab and local automation** | Complete locally | Manual ETL and ELT, Batch Trail, run history, Data Explorer, and optional local Airflow + dbt. Verify that the sample totals ₱2,000.00 in both modes, an approved correction publishes ₱1,300.00, and a failed correction preserves the last good batch. |
+| **3. SQL Workspace, reports, and export** | Next | Start with a table browser, SQL editor, Run button, saved queries, and results grid. Run SQL in the browser on an authorized snapshot with no writeback. Then add a date-filtered report and Excel export; verify that both match the worksheet total for the same batch and mode. |
+| **4. Local Warehouse Setup** | Planned | Let an Admin create a named local compute profile (for example, `dbt_wh`) and grant permission to run jobs on it. Select it from Pipeline Lab for Airflow + dbt runs. Verify that Django denies unauthorized runs, the runner enforces a one-job-at-a-time limit and a timeout, and a timed-out job never publishes. |
+| **5. Optional self-hosted release** | Planned | Verify a clean local installation and the synthetic demo. Before any hosted release, verify HTTPS, sign-in rate limiting, account isolation, persistence after restart, and backup restoration. No hosting purchase or cloud service is required to finish the local phases. |
+
+**Compute and storage stay separate.** A Phase 4 profile controls how pipeline jobs run on the local machine. It does not own data or create a second database server. Each account keeps its private DuckDB file, and a compute grant never grants access to another account's data. Build the setup screen and enforce the limits before considering an AutumnLeaf-specific admin command such as `CREATE WAREHOUSE`. The SQL Workspace remains isolated from admin commands and pipeline writes.
 
 ## 7. Outside the MVP
 
-Public registration, social sign-in, shared warehouses, scheduled pipelines, external API connectors, drag-and-drop dashboard building, live Excel refresh, and server execution of user-supplied code are outside the first release.
+Public registration, social sign-in, shared warehouse data, scheduled pipelines, external API connectors, drag-and-drop dashboard building, live Excel refresh, and server execution of user-supplied code are outside the first release. Snowflake-compatible administrative SQL and cloud compute provisioning are also out of scope.
