@@ -1,0 +1,26 @@
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Development output
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+node_modules/
+dist/
+coverage/
+
+# Private application data
+data/
+uploads/
+exports/
+backups/
+*.sqlite3
+*.sqlite3-*
+*.duckdb
+*.duckdb.*
+
+# Local editor and OS files
+.DS_Store
