@@ -12,4 +12,5 @@ urlpatterns = [
     path("api/health/", health, name="health"),
     path("api/", include("identity.urls")),
     path("api/", include("pipelines.urls")),
+    path("api/", include("pipelines.kaggle_urls")),
 ]

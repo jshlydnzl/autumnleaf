@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { ApiError, message, read, write } from './api'
 import { DataGrid, type Cell } from './data-grid'
+import { PipelineInput } from './kaggle-source'
 
 type Mode = 'etl' | 'elt'
 type RunStatus = 'in_progress' | 'published' | 'review' | 'failed' | 'unchanged'
@@ -284,19 +285,25 @@ export function PipelineLab() {
       {error && <p className="feedback pipeline-feedback" role="alert">{error}</p>}
       {automationId && automationError && <p className="feedback pipeline-feedback" role="alert">{automationError}</p>}
       {notice && <p className="pipeline-notice" role="status">{notice}</p>}
-      <form className="panel pipeline-form" onSubmit={upload} aria-label="New pipeline run">
-        <label>Orders CSV<input type="file" name="file" accept=".csv,text/csv" required disabled={busy} /></label>
-        <label>Batch month<input type="month" name="month" required value={month} onChange={event => setMonth(event.target.value)} /></label>
-        <label>Pipeline mode<select name="mode" value={mode} onChange={event => setMode(event.target.value as Mode)}>
-          <option value="elt">ELT · SQL transform</option><option value="etl">ETL · Python transform</option>
-        </select></label>
-        <button className="button primary" disabled={busy}>{busy ? 'Working…' : 'Upload CSV'}</button>
-        <details className="pipeline-samples">
-          <summary>Try the sample CSVs</summary>
-          <p className="muted">Use batch month November 2026. Files can be up to 2 MiB with 10,000 data rows.</p>
-          <div>{samples.map(([file, label]) => <a className="text-link" href={'/api/pipelines/samples/' + file + '/'} key={file}>{label}</a>)}</div>
-        </details>
-      </form>
+      <PipelineInput<Run> mode={mode} onMode={setMode} busy={busy} onRun={(data, reused) => {
+        setError('')
+        setNotice(reused ? 'This file is already published for the selected month and mode. No rows were added.' : '')
+        show(data)
+      }}>
+        <form className="panel pipeline-form" onSubmit={upload} aria-label="New pipeline run">
+          <label>Orders CSV<input type="file" name="file" accept=".csv,text/csv" required disabled={busy} /></label>
+          <label>Batch month<input type="month" name="month" required value={month} onChange={event => setMonth(event.target.value)} /></label>
+          <label>Pipeline mode<select name="mode" value={mode} onChange={event => setMode(event.target.value as Mode)}>
+            <option value="elt">ELT · SQL transform</option><option value="etl">ETL · Python transform</option>
+          </select></label>
+          <button className="button primary" disabled={busy}>{busy ? 'Working…' : 'Upload CSV'}</button>
+          <details className="pipeline-samples">
+            <summary>Try the sample CSVs</summary>
+            <p className="muted">Use batch month November 2026. Files can be up to 2 MiB with 10,000 data rows.</p>
+            <div>{samples.map(([file, label]) => <a className="text-link" href={'/api/pipelines/samples/' + file + '/'} key={file}>{label}</a>)}</div>
+          </details>
+        </form>
+      </PipelineInput>
       <div className="pipeline-grid">
         <div className="pipeline-main">
           {run ? <BatchTrail run={run} busy={busy} canAutomate={canAutomate}

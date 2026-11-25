@@ -22,6 +22,7 @@ Use Node.js 24 and Python 3.12 for the tested setup.
 
 - **Frontend:** Run `npm ci` and `npm run build` from **frontend** to install dependencies, check types, and build the browser app.
 - **Backend:** Install the pinned dependencies from [requirements.txt](backend/requirements.txt) in a Python virtual environment.
+- **Kaggle source:** Install [requirements-kaggle.txt](backend/requirements-kaggle.txt) in the same virtual environment to enable Kaggle imports.
 - **Access:** AutumnLeaf is invitation-only. If you need an account, contact the repository owner, [@jshlydnzl](https://github.com/jshlydnzl).
 
 ## Try the Pipeline Lab
@@ -31,3 +32,5 @@ Open **Pipeline Lab**, choose **November 2026**, and download the original sampl
 The corrected sample replaces the month with one order totaling **₱1,300.00** after approval. The invalid sample must leave the last published batch unchanged. Use **Data Explorer** to inspect the raw, staging, and published sales tables. Free-form browser SQL, dashboards, and Excel export are not part of this release.
 
 On a workspace with local automation enabled, upload an ELT file and choose **Run with Airflow + dbt** before starting the manual steps. Airflow runs the load and dbt build; AutumnLeaf imports the tested result while you monitor the run or after you reopen it. A correction still requires approval.
+
+With Kaggle enabled, choose **Source → Kaggle → E-commerce & retail**, select a dataset, and preview a month before creating an ETL or ELT run. The catalog uses pinned public dataset versions and imports only order IDs, dates, and amounts. It does not convert currencies. A different batch for the same month and mode still requires replacement approval.

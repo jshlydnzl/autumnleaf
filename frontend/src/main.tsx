@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState, type ReactNode } from 'react'
+import { StrictMode, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ApiError, message, read, write, type Account } from './api'
 import { Accounts } from './accounts'
@@ -65,13 +65,45 @@ function Workspace({ account }: { account: Account }) {
   )
 }
 
-function Shell({ account, path, signOut, children }: {
-  account: Account, path: string, signOut: () => Promise<void>, children: ReactNode,
+function Shell({ account, signOut }: {
+  account: Account, signOut: () => Promise<void>,
 }) {
+  const [requested, setRequested] = useState(() => window.location.pathname)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const routes = nav.filter(([href]) => href !== '/accounts' || account.role === 'admin')
+  const path = routes.some(([href]) => href === requested) ? requested : '/'
+  const main = useRef<HTMLElement>(null)
+  const previousPath = useRef(path)
+
+  useEffect(() => {
+    const onBackOrForward = () => setRequested(window.location.pathname)
+    window.addEventListener('popstate', onBackOrForward)
+    return () => window.removeEventListener('popstate', onBackOrForward)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (previousPath.current === path) return
+    previousPath.current = path
+    main.current?.scrollTo(0, 0)
+    window.scrollTo(0, 0)
+    main.current?.focus({ preventScroll: true })
+  }, [path])
+
+  function navigate(event: MouseEvent<HTMLDivElement>) {
+    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+    const link = event.target instanceof Element ? event.target.closest('a[href]') : null
+    if (!(link instanceof HTMLAnchorElement) || link.target || link.hasAttribute('download')) return
+    const { origin, pathname, search, hash } = new URL(link.href)
+    if (origin !== window.location.origin || search || hash || !routes.some(([href]) => href === pathname)) return
+    event.preventDefault()
+    if (pathname === requested && !window.location.hash && !window.location.search) return
+    window.history.pushState(null, '', pathname)
+    setRequested(pathname)
+  }
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" onClick={navigate}>
       <a className="skip-link button" href="#workspace-content">Skip to content</a>
       <header className="app-header">
         <a className="brand" href="/"><Leaf /> AutumnLeaf</a>
@@ -86,13 +118,15 @@ function Shell({ account, path, signOut, children }: {
       </header>
       <nav className="app-nav" aria-label="Workspace navigation">
         <p className="eyebrow">Workspace</p>
-        {nav.filter(([href]) => href !== '/accounts' || account.role === 'admin').map(([href, label, icon]) => (
+        {routes.map(([href, label, icon]) => (
           <a key={href} href={href} aria-current={path === href ? 'page' : undefined}><NavIcon name={icon} /> <span>{label}</span></a>
         ))}
       </nav>
-      <main id="workspace-content" className="app-main" tabIndex={-1}>
+      <main ref={main} id="workspace-content" className="app-main" tabIndex={-1}>
         {error && <p className="feedback" role="alert">{error}</p>}
-        {children}
+        {path === '/accounts' ? <Accounts signedIn={account} />
+          : path === '/data' ? <DataExplorer />
+            : path === '/pipelines' ? <PipelineLab /> : <Workspace account={account} />}
       </main>
     </div>
   )
@@ -139,18 +173,12 @@ function App() {
       }} />
     </>
   )
-  const requested = window.location.pathname
-  const path = nav.some(([href]) => href === requested) && (requested !== '/accounts' || account.role === 'admin') ? requested : '/'
   return (
-    <Shell account={account} path={path} signOut={async () => {
+    <Shell account={account} signOut={async () => {
       await write('auth/logout/', 'POST')
       window.history.replaceState(null, '', '/')
       setAccount(null)
-    }}>
-      {path === '/accounts' ? <Accounts signedIn={account} />
-        : path === '/data' ? <DataExplorer />
-          : path === '/pipelines' ? <PipelineLab /> : <Workspace account={account} />}
-    </Shell>
+    }} />
   )
 }
 

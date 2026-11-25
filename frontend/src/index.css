@@ -99,6 +99,12 @@ tbody tr + tr { border-top: 1px solid var(--color-canvas); }
 .skip-link { position: absolute; z-index: 5; left: 1rem; top: -9rem; background: var(--color-canvas); }
 .skip-link:focus { top: 1rem; }
 
+@media (width > 800px) {
+  .app-shell { height: 100dvh; grid-template-rows: auto minmax(0, 1fr); }
+  .app-main, .app-nav { overflow-y: auto; }
+  .app-main { scrollbar-gutter: stable; }
+}
+
 @media (max-width: 800px) {
   .auth-layout { grid-template-columns: 1fr; }
   .auth-cover { display: none; }
@@ -121,6 +127,9 @@ tbody tr + tr { border-top: 1px solid var(--color-canvas); }
 .pipeline-form { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(9.5rem, .85fr) minmax(12rem, 1fr) auto; gap: .9rem; align-items: end; padding: 1.1rem; margin-bottom: 1rem; }
 .pipeline-form input[type=file] { padding: .3rem; }
 .pipeline-form input[type=file]::file-selector-button { color: var(--color-text); background: var(--color-surface); border: 0; border-radius: .25rem; padding: .35rem .55rem; margin-right: .55rem; cursor: pointer; }
+.kaggle-panel { margin-bottom: 1rem; }
+.kaggle-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) repeat(2, minmax(0, 1fr)) max-content; gap: .65rem; align-items: end; }
+.kaggle-controls :is(input, select, .button) { block-size: 2.75rem; }
 .pipeline-samples { grid-column: 1 / -1; font-size: .875rem; }
 .pipeline-samples p { margin: .45rem 0; }
 .pipeline-samples > div { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
@@ -173,12 +182,12 @@ summary { cursor: pointer; }
 .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .6rem; padding: .8rem 1rem; }
 
 @media (max-width: 1140px) {
-  .pipeline-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pipeline-form, .kaggle-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 900px) {
   .pipeline-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
   .app-nav { flex-wrap: wrap; }
-  .pipeline-form, .explorer-grid { grid-template-columns: minmax(0, 1fr); }
+  .pipeline-form, .kaggle-controls, .explorer-grid { grid-template-columns: minmax(0, 1fr); }
 }

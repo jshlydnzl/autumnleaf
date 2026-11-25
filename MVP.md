@@ -73,7 +73,7 @@ Use the desktop-first layout, autumn palette, and interaction patterns in the [i
 | Phase | Status | Scope and acceptance |
 | --- | --- | --- |
 | **1. Identity and isolation** | Complete; on GitHub | Invite-only accounts, Admin and Member roles, and private workspaces. Verify that Members cannot manage accounts or read another workspace and that disabling an account revokes its sessions. |
-| **2. Pipeline Lab and local automation** | Complete locally | Manual ETL and ELT, Batch Trail, run history, Data Explorer, and optional local Airflow + dbt. Verify that the sample totals ₱2,000.00 in both modes, an approved correction publishes ₱1,300.00, and a failed correction preserves the last good batch. |
+| **2. Pipeline Lab and local automation** | Complete | Manual ETL and ELT, Batch Trail, run history, Data Explorer, optional local Airflow + dbt, and curated Kaggle imports. Verify that the sample totals ₱2,000.00 in both modes, an approved correction publishes ₱1,300.00, and a failed correction preserves the last good batch. |
 | **3. SQL Workspace, reports, and export** | Next | Start with a table browser, SQL editor, Run button, saved queries, and results grid. Run SQL in the browser on an authorized snapshot with no writeback. Then add a date-filtered report and Excel export; verify that both match the worksheet total for the same batch and mode. |
 | **4. Local Warehouse Setup** | Planned | Let an Admin create a named local compute profile (for example, `dbt_wh`) and grant permission to run jobs on it. Select it from Pipeline Lab for Airflow + dbt runs. Verify that Django denies unauthorized runs, the runner enforces a one-job-at-a-time limit and a timeout, and a timed-out job never publishes. |
 | **5. Optional self-hosted release** | Planned | Verify a clean local installation and the synthetic demo. Before any hosted release, verify HTTPS, sign-in rate limiting, account isolation, persistence after restart, and backup restoration. No hosting purchase or cloud service is required to finish the local phases. |
@@ -82,4 +82,4 @@ Use the desktop-first layout, autumn palette, and interaction patterns in the [i
 
 ## 7. Outside the MVP
 
-Public registration, social sign-in, shared warehouse data, scheduled pipelines, external API connectors, drag-and-drop dashboard building, live Excel refresh, and server execution of user-supplied code are outside the first release. Snowflake-compatible administrative SQL and cloud compute provisioning are also out of scope.
+Public registration, social sign-in, shared warehouse data, scheduled pipelines, general-purpose API connectors, drag-and-drop dashboard building, live Excel refresh, and server execution of user-supplied code are outside the first release. Snowflake-compatible administrative SQL and cloud compute provisioning are also out of scope.
