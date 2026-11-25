@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
+import { lazy, StrictMode, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ApiError, message, read, write, type Account } from './api'
 import { Accounts } from './accounts'
@@ -8,10 +8,15 @@ import { DataExplorer } from './data-explorer'
 import { PipelineLab } from './pipeline-lab'
 import './index.css'
 
+const SqlWorkspace = lazy(() => import('./sql-workspace'))
+const SalesReports = lazy(() => import('./sales-reports'))
+
 const nav = [
   ['/', 'Workspace', 'workspace'],
   ['/data', 'Data Explorer', 'data'],
   ['/pipelines', 'Pipeline Lab', 'pipeline'],
+  ['/sql', 'SQL Workspace', 'sql'],
+  ['/reports', 'Reports', 'reports'],
   ['/accounts', 'Accounts', 'accounts'],
 ] as const
 
@@ -126,7 +131,10 @@ function Shell({ account, signOut }: {
         {error && <p className="feedback" role="alert">{error}</p>}
         {path === '/accounts' ? <Accounts signedIn={account} />
           : path === '/data' ? <DataExplorer />
-            : path === '/pipelines' ? <PipelineLab /> : <Workspace account={account} />}
+            : path === '/pipelines' ? <PipelineLab />
+              : path === '/sql' || path === '/reports' ? <Suspense fallback={<p role="status">Opening view…</p>}>
+                  {path === '/sql' ? <SqlWorkspace /> : <SalesReports />}
+                </Suspense> : <Workspace account={account} />}
       </main>
     </div>
   )

@@ -29,6 +29,8 @@ Account management is not data access. An Admin can see account details and stat
 
 The first workflow uses synthetic retail orders. A CSV contains **order_id**, **order_date**, and **amount**. Each file represents a complete export for one month, not a partial update. The load checks required columns, duplicate order IDs, dates within the selected month, and valid amounts. Currency is stored as a fixed-precision decimal, not a floating-point value.
 
+The optional Kaggle source maps a small catalog of public retail datasets into the same three-column orders format. Users preview the selected month before creating a run. Arbitrary Kaggle datasets and currency conversion are not supported.
+
 ### 3.2 ETL and ELT
 
 | Step | ETL | ELT |
@@ -54,7 +56,7 @@ When local automation is configured, Airflow loads a fresh ELT batch into a sepa
 | --- | --- |
 | **Data Explorer** | Browse raw, staging, and reporting objects; inspect columns and preview rows. |
 | **SQL Workspace** | Write and save SQL, run it on a bounded copy of a permitted dataset, and see results or errors below the editor. |
-| **Pipeline Lab** | Upload a CSV, choose ETL or ELT, run each step, inspect errors, and compare clean rows and totals. |
+| **Pipeline Lab** | Upload a CSV or preview a curated Kaggle dataset, choose ETL or ELT, run each step, inspect errors, and compare clean rows and totals. |
 | **Reports** | Show one revenue total, one daily sales chart, a date filter, and an Excel export from **mart.daily_sales**. |
 | **Accounts** | Admin-only page for provisioning accounts and managing access. |
 
@@ -74,7 +76,7 @@ Use the desktop-first layout, autumn palette, and interaction patterns in the [i
 | --- | --- | --- |
 | **1. Identity and isolation** | Complete; on GitHub | Invite-only accounts, Admin and Member roles, and private workspaces. Verify that Members cannot manage accounts or read another workspace and that disabling an account revokes its sessions. |
 | **2. Pipeline Lab and local automation** | Complete | Manual ETL and ELT, Batch Trail, run history, Data Explorer, optional local Airflow + dbt, and curated Kaggle imports. Verify that the sample totals ₱2,000.00 in both modes, an approved correction publishes ₱1,300.00, and a failed correction preserves the last good batch. |
-| **3. SQL Workspace, reports, and export** | Next | Start with a table browser, SQL editor, Run button, saved queries, and results grid. Run SQL in the browser on an authorized snapshot with no writeback. Then add a date-filtered report and Excel export; verify that both match the worksheet total for the same batch and mode. |
+| **3. SQL Workspace, reports, and export** | Complete locally | Browse tables, run read-only SQL in the browser on a published batch snapshot, and save query text. Filter sales by batch month, mode, and optional dates within the month. Export the same filtered sales to Excel. |
 | **4. Local Warehouse Setup** | Planned | Let an Admin create a named local compute profile (for example, `dbt_wh`) and grant permission to run jobs on it. Select it from Pipeline Lab for Airflow + dbt runs. Verify that Django denies unauthorized runs, the runner enforces a one-job-at-a-time limit and a timeout, and a timed-out job never publishes. |
 | **5. Optional self-hosted release** | Planned | Verify a clean local installation and the synthetic demo. Before any hosted release, verify HTTPS, sign-in rate limiting, account isolation, persistence after restart, and backup restoration. No hosting purchase or cloud service is required to finish the local phases. |
 

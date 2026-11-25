@@ -1,0 +1,15 @@
+.workbench-tools { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
+.workbench-tools.panel { padding: 1rem; margin-bottom: 1rem; }
+.workbench-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; width: min(23rem, 100%); }
+.workbench-tools :is(input, select, button) { min-height: 2.75rem; }
+.worksheet-layout { display: grid; grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.worksheet-tables :is(.button, p) { max-width: 100%; overflow-wrap: anywhere; }
+.worksheet-tables .muted { font-size: .875rem; margin-top: .3rem; }
+.worksheet-layout textarea { width: 100%; min-height: 12rem; resize: vertical; padding: .8rem; border: 1px solid var(--color-control-border); border-radius: .45rem; background: var(--color-canvas); color: var(--color-text); font: .95rem/1.55 monospace; }
+.worksheet-error { overflow-wrap: anywhere; white-space: pre-wrap; }
+.sales-totals { display: flex; flex-wrap: wrap; gap: .8rem 2rem; }
+.sales-totals dd { font-size: 1.6rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.sales-totals dt { color: var(--color-text-muted); }
+.sales-chart { min-width: 0; height: clamp(10rem, 30vw, 18rem); overflow: hidden; }
+@media (max-width: 700px) { .worksheet-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .workbench-filters { grid-template-columns: minmax(0, 1fr); } }

@@ -13,7 +13,7 @@ The first release has two layers in one repository: a React frontend and a **mod
 | Browser interface | React, TypeScript, and Tailwind CSS | Build the account screens, data explorer, SQL editor, pipeline controls, and reports. |
 | Frontend tooling | Node.js, npm, and Vite | Run the development server and build static production assets. Node.js is not needed to serve the production build. |
 | Backend API | Python and Django 5.2 LTS, using a supported patch release | Provide JSON endpoints, accept CSV uploads and return Excel downloads, manage sessions, enforce roles, and run warehouse workflows. |
-| Application database | SQLite locally; PostgreSQL when hosted | Store accounts, roles, sessions, workspace ownership, saved SQL text, and account audit events. |
+| Application database | SQLite locally; PostgreSQL when hosted | Store accounts, roles, sessions, workspace ownership, and account audit events. |
 | Analytical database | DuckDB, one private database file per account | Handle ETL and ELT outputs, warehouse tables, run receipts, and analytical queries. |
 | Browser SQL | DuckDB-Wasm in a browser worker | Run user-written SQL against an authorized dataset snapshot without exposing the server warehouse to that SQL. |
 | Charts and workbooks | Chart.js and openpyxl | Draw the daily sales chart and create a filtered Excel export. |
@@ -25,14 +25,16 @@ The first release has two layers in one repository: a React frontend and a **mod
 
 React owns the screens and interaction state. It calls Django under **/api/** using relative URLs. Django owns sessions, role checks, workspace ownership, input validation, and the published warehouse. The frontend may hide actions based on the session response, but it cannot grant permissions. If the session expires, the API returns **401 Unauthorized** and the frontend returns to sign-in. A signed-in Member requesting an Admin action receives **403 Forbidden**.
 
-Use Django session cookies and protect state-changing requests from forgery. In development, Vite proxies the API; in production, the HTTPS entry point serves the static frontend and routes **/api/** to Django.
+Use Django session cookies and protect state-changing requests from forgery. In development, Vite proxies the API; in production, the HTTPS entry point serves the static frontend and routes **/api/** to Django. Serve the frontend entry point for direct visits and refreshes on browser routes such as **/pipelines**, without rewriting API or static-asset requests.
+
+Ordinary in-app navigation updates the URL with the browser History API. The signed-in shell stays mounted and only the main content changes. Browser Back and Forward update the active view. Django still checks the session and permissions on protected API calls.
 
 ## 3. Services and functions
 
 | Service | Functions available in the MVP |
 | --- | --- |
 | **Identity and accounts** | Sign in, sign out, and control access to private workspaces. The instance operator manages account setup and recovery. |
-| **Ingestion** | Upload a retail orders CSV, associate it with a batch month, validate the file, calculate its checksum, and retain the source for inspection. |
+| **Ingestion** | Upload an orders CSV or fetch a curated Kaggle file, select a batch month, and retain the resulting orders input for the pipeline. |
 | **Pipeline Lab** | Run Python ETL or SQL ELT step by step; compare validated rows and revenue; preview a replacement batch; see why a run failed. |
 | **Warehouse Explorer** | Browse raw, staging, and reporting tables. Inspect column types and preview rows, scoped to the signed-in account. |
 | **SQL Workspace** | Write and save SQL, execute it on a permitted snapshot in the browser, and review the result or error. |
@@ -55,9 +57,9 @@ The hosted application supports invite-only installations. Members do not see ac
 
 | Data | Authoritative store |
 | --- | --- |
-| Accounts, permissions, sessions, workspace registry, saved SQL, and account audit | Application database |
+| Accounts, permissions, sessions, workspace registry, and account audit | Application database |
 | Uploaded source files | Private volume at launch, keyed by workspace and upload ID |
-| Raw and clean rows, published batch state, and pipeline receipts | The owner's DuckDB database |
+| Raw and clean rows, published batch state, pipeline receipts, and saved query text | The owner's DuckDB database |
 | SQL scratch results and changes | Browser worker; temporary. Saving query text does not save results. |
 | Dashboard and Excel output | Derived from published warehouse data; not separate sources of truth |
 
@@ -68,6 +70,18 @@ The application database does not copy the authoritative warehouse publication s
 Airflow can run an uploaded ELT batch outside the browser. Django provides a private copy of the source and triggers a workflow using the run identifier. Airflow loads raw rows, runs dbt models and tests, and prepares a result in a separate database for that run. Airflow and dbt do not open the live account warehouse.
 
 AutumnLeaf checks the run when its Batch Trail is open. Django imports a successful result and applies the same publication and replacement rules as the manual pipeline. Failed runs do not advance the published batch. This integration is for loopback development; production orchestration and scheduled runs are outside the release scope.
+
+### 4.4 Kaggle source
+
+The optional server-side connector uses KaggleHub to fetch an allowlisted CSV from a pinned public dataset version. The browser supplies a catalog ID, not a URL or file path. Django reads at most 2 MiB plus one byte to detect oversized input, rejects input above 10,000 data rows, and removes the temporary download after reading it.
+
+The connector selects the batch month and maps each source to order ID, date, and amount. For Sample Sales, it keeps shipped lines and groups them by order ID. Previewing does not create a run. Creating a run verifies that the prepared CSV still matches the preview checksum, then sends it through the same private orders pipeline as a local upload. The original Kaggle file and unrelated fields are not stored in the workspace.
+
+### 4.5 Worksheet, reports, and export
+
+Django returns a copy of one published month and mode from the signed-in account's workspace. A fresh DuckDB-Wasm worker loads the copy, disables external file and network access, and runs a single read-only query with a time limit and up to 200 displayed rows. SQL text is only sent to Django when the user explicitly saves it; Django stores the text without executing it.
+
+Reports and Excel use the same published daily-sales model and date filters. Excel export checks the published batch ID from the displayed report. If the batch was replaced, the user refreshes the report before exporting.
 
 ## 5. Security and operational requirements
 
@@ -93,7 +107,7 @@ Set configurable limits for upload size, rows, retained files, query time, and r
 | More signed-in users need simultaneous page access | Scale Django web replicas after moving live warehouse access to its owning service. Distribute work by workspace and use versioned snapshots for read-heavy reports. | Web replicas do not open live DuckDB files directly. Authorization remains in force for every request. |
 | Teams need concurrent writes to a shared analytical dataset | Reassess the warehouse engine or table format behind the existing pipeline interface. | Treat shared writes, shared permissions, and migration as new requirements, not a configuration switch. |
 
-External connectors, scheduled jobs, team workspaces, live BI connections, and distributed compute are extensions. The MVP requires no Redis, Kubernetes, or microservices.
+General-purpose external connectors, scheduled jobs, team workspaces, live BI connections, and distributed compute are extensions. The MVP requires no Redis, Kubernetes, or microservices.
 
 ## 7. Deployment and verification
 

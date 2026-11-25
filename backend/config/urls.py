@@ -13,4 +13,5 @@ urlpatterns = [
     path("api/", include("identity.urls")),
     path("api/", include("pipelines.urls")),
     path("api/", include("pipelines.kaggle_urls")),
+    path("api/", include("workbench.urls")),
 ]

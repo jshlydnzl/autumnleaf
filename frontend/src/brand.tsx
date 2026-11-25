@@ -11,6 +11,8 @@ const navPaths = {
   workspace: <><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 4 14 4 14 0V6M5 12v6c0 4 14 4 14 0v-6" /></>,
   data: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M4 10h16M10 4v16M4 15h16" /></>,
   pipeline: <><rect x="3" y="3" width="5" height="5" rx="1" /><rect x="16" y="9.5" width="5" height="5" rx="1" /><rect x="3" y="16" width="5" height="5" rx="1" /><path d="M5.5 8v8M5.5 12H16" /></>,
+  sql: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m7 9 3 3-3 3m6 0h4" /></>,
+  reports: <path d="M4 4v16h16M8 16v-4m5 4V8m5 8V5" />,
   accounts: <><circle cx="9" cy="8" r="3" /><path d="M3 20v-2a6 4 0 0 1 12 0v2M16 5a3 3 0 1 1 0 6m1 3c3 0 4 2 4 4v2" /></>,
 }
 

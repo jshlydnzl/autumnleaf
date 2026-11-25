@@ -28,14 +28,14 @@ Use a system sans-serif for the interface and a system monospace for SQL only. S
 
 | Area | Interface behavior |
 | --- | --- |
-| **App navigation** | A compact sidebar leads to **Data Explorer**, **SQL Workspace**, **Pipeline Lab**, and **Reports**. Show **Accounts** to Admins only. Keep the signed-in account and sign-out control in the shell. |
+| **App navigation** | Start with **Workspace**, followed by **Data Explorer**, **Pipeline Lab**, **SQL Workspace**, and **Reports**. Show **Accounts** to Admins only. Keep the sidebar, account, and sign-out control visible when switching views. |
 | **Data Explorer** | Use an expandable schema and table tree, with a column list and row preview in the main pane. In the SQL Workspace, the explorer can collapse so the editor keeps its width. |
 | **SQL Workspace** | Put the editor above the results grid. Keep **Run query** and **Save query** near the editor. Show result count, execution status, and errors in the results area without hiding or clearing the SQL. |
-| **Pipeline Lab** | Put file selection and ETL or ELT mode at the top. Below, show the ordered pipeline steps, the current step's output, and recent runs. |
+| **Pipeline Lab** | Start with **Source**: **Upload CSV** or **Kaggle**. For Kaggle, show category, dataset, batch month, mode, and preview. Keep the dataset control the same width as options change, and align the preview button with the fields on desktop. Below, show the ordered steps, current output, and recent runs. |
 | **Reports** | Put the date filter and **Export to Excel** above one revenue KPI and one daily sales chart. The chart and export must represent the same selected data. |
 | **Accounts** | Show account status, role, and available management actions to authorized users only. Django enforces permission on every request. |
 
-On narrower screens, collapse navigation and the data explorer rather than shrinking the editor or table text. Stack the editor and results. Allow wide tables to scroll inside their own area. Keep links, controls, and dialogs usable with the keyboard.
+On desktop, the right-hand content scrolls independently of the sidebar and top bar. On narrower screens, navigation moves above the content, controls wrap, and the page scrolls normally. Allow wide tables to scroll inside their own area. Keep links, controls, and dialogs usable with the keyboard.
 
 ## 4. What makes AutumnLeaf distinct
 
